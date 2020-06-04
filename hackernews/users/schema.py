@@ -30,10 +30,18 @@ class CreateUser(graphene.Mutation):
 
 
 class Query(graphene.ObjectType):
+    me = graphene.Field(UserType)
     user = graphene.Field(UserType,
                           username=graphene.String(),
                           email=graphene.String())
     all_users = graphene.List(UserType)
+
+    def resolve_me(self, info):
+        user = info.context.user
+        if user.is_anonymous:
+            raise Exception('Not logged in!')
+
+        return user
 
     def resolve_user(self, info, **kwargs):
         username = kwargs.get('username')
