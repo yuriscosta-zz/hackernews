@@ -1,5 +1,6 @@
 import graphene
 
+from django.db.models import Q
 from graphene_django import DjangoObjectType
 from graphql import GraphQLError
 
@@ -57,12 +58,11 @@ class CreateVote(graphene.Mutation):
 
 class Query(graphene.ObjectType):
     link = graphene.Field(LinkType, id=graphene.Int())
-    all_links = graphene.List(LinkType)
+    all_links = graphene.List(LinkType, search=graphene.String())
 
     vote = graphene.Field(VoteType,
-                          user=graphene.String(),
-                          link=graphene.Int())
-    all_votes = graphene.List(VoteType)
+                          id=graphene.Int())
+    all_votes = graphene.List(VoteType, search=graphene.String())
 
     def resolve_link(self, info, **kwargs):
         id = kwargs.get('id')
@@ -71,22 +71,31 @@ class Query(graphene.ObjectType):
 
         return None
 
-    def resolve_all_links(self, info, **kwargs):
+    def resolve_all_links(self, info, search=None, **kwargs):
+        if search:
+            filter = (
+                Q(url__icontains=search) |
+                Q(description__icontains=search)
+            )
+            return Link.objects.filter(filter)
+
         return Link.objects.all()
 
     def resolve_vote(self, info, **kwargs):
-        username = kwargs.get('user')
-        link_id = kwargs.get('link')
-
-        if username is not None:
-            return Vote.objects.get(user__username=username)
-
-        if link_id is not None:
-            return Vote.objects.get(link__id=link_id)
+        id = kwargs.get('id')
+        if id is not None:
+            return Vote.objects.get(id=id)
 
         return None
 
-    def resolve_all_votes(self, info, **kwargs):
+    def resolve_all_votes(self, info, search=None, **kwargs):
+        if search:
+            filter = (
+                Q(user__username__icontains=search) |
+                Q(link__id__icontains=search)
+            )
+            return Vote.objects.filter(filter)
+
         return Vote.objects.all()
 
 

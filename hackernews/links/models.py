@@ -19,6 +19,3 @@ class Vote(models.Model):
     link = models.ForeignKey(Link,
                              related_name='votes',
                              on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f'{self.user.username} - {self.link.id}'
