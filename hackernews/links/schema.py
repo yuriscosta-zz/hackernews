@@ -58,11 +58,17 @@ class CreateVote(graphene.Mutation):
 
 class Query(graphene.ObjectType):
     link = graphene.Field(LinkType, id=graphene.Int())
-    all_links = graphene.List(LinkType, search=graphene.String())
+    all_links = graphene.List(LinkType,
+                              search=graphene.String(),
+                              first=graphene.Int(),
+                              skip=graphene.Int())
 
     vote = graphene.Field(VoteType,
                           id=graphene.Int())
-    all_votes = graphene.List(VoteType, search=graphene.String())
+    all_votes = graphene.List(VoteType,
+                              search=graphene.String(),
+                              first=graphene.Int(),
+                              skip=graphene.Int())
 
     def resolve_link(self, info, **kwargs):
         id = kwargs.get('id')
@@ -71,15 +77,23 @@ class Query(graphene.ObjectType):
 
         return None
 
-    def resolve_all_links(self, info, search=None, **kwargs):
+    def resolve_all_links(self, info, search=None, first=None, skip=None, **kwargs):
+        queryset = Link.objects.all()
+
         if search:
             filter = (
                 Q(url__icontains=search) |
                 Q(description__icontains=search)
             )
-            return Link.objects.filter(filter)
+            queryset = queryset.filter(filter)
 
-        return Link.objects.all()
+        if skip:
+            queryset = queryset[skip:]
+
+        if first:
+            queryset = queryset[:first]
+
+        return queryset
 
     def resolve_vote(self, info, **kwargs):
         id = kwargs.get('id')
@@ -88,15 +102,23 @@ class Query(graphene.ObjectType):
 
         return None
 
-    def resolve_all_votes(self, info, search=None, **kwargs):
+    def resolve_all_votes(self, info, search=None, first=None, skip=None, **kwargs):
+        queryset = Vote.objects.all()
+
         if search:
             filter = (
                 Q(user__username__icontains=search) |
                 Q(link__id__icontains=search)
             )
-            return Vote.objects.filter(filter)
+            queryset = queryset.filter(filter)
 
-        return Vote.objects.all()
+        if skip:
+            queryset = queryset[skip:]
+
+        if first:
+            queryset = queryset[:first]
+
+        return queryset
 
 
 class Mutation(graphene.ObjectType):
